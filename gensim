@@ -1,0 +1,286 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use diagnostics;
+use Term::ANSIColor;
+use Term::ReadLine;
+
+# author:       manuel.fill.42@gmail.com
+# license:      SEE LICENSE
+#
+
+# this is gensim, a very stupid simulator
+# each creature has a genome of 100 characters (ACGT)
+# representing a VERY, VEEEEEERY simple view on life.
+# the genome has 4 sections by now, namely:
+# 1   -  20  -> Background Color Section
+# 21  -  40  -> Foreground Color Section
+# 41  -  60  -> Form Section
+# 61  -  80  -> Symbol Section
+# 81  - 100  -> Junk DNA ... I don't know yet
+#
+# Recombination is where mutations happen. There is no other influence for it.
+# One could argue that random mutations happen in nature, but because this simulator
+# is random anyway, why get another level of enthropy in it ;) ?
+#
+# Color is calcucalted like this: A is for R part, C is for G part, G is for B part.
+# Since the color section is 20 characters long, it could happen that we count over 5. (example: 6 A's)
+# in this case, we take the modulo % 5. A gene sequence of 5 A's, 7 C's, 10 G's and 3 T's
+# would give you 0203 or rgb020. The T's are ignored in our RGB reality.
+#
+# I would love to see someone doing a better recombinate() function. So far, the version
+# I came up with here, is pretty random and not bad, but I think there are better ways.
+# 
+# Adding up the genome pool would be fun too. Who knows? The creatures could have names based
+# on their genes! Why not?!
+
+
+# our genetic alphabet, very simplified
+my @ALPHABET = qw(A C G T);
+my @SYMBOLS = (".", ",", ":", ";", "'", "~", "?", "§", "-", "_", "*", "+", "^");
+my ($A_sym, $C_sym, $G_sym, $T_sym);
+
+# max x y values for drawing pics
+my $MAX_X = 100;
+my $MAX_Y = 35;
+
+# size of the creature pictures (10 x 10 recommended for beauty) 
+my $dim_x = 10;
+my $dim_y = 10;
+
+# list for all creatures we create
+my @C;
+
+# our 'command line' :P
+my $cli = Term::ReadLine->new;
+
+sub spawn {
+    my $amount = shift || 1;
+    for (1 .. $amount) {
+        push @C, join("", @ALPHABET[map { rand @ALPHABET } (1..100)]);
+    }
+}
+
+
+# recombinate takes 2 genome strings, returns a randomly recombinated genome string
+sub recombinate {
+    my ($gene_a, $gene_b) = @_;
+    my $gene_result;
+
+    # calculate how much genes we recombinate at once. 100 % $divs == 0
+    my @divs = qw(2 4 5 10 20 25 50);
+    my $rand_div = $divs[rand @divs];
+
+    # starting position is 0, will be incremented after every loop.
+    # in each loop, we take $rand_div characters from a and b, flip a coin,
+    # and then append either part a or part b to the final genome.
+    my $cur_pos = 0;
+    for(1 .. 100/$rand_div) {
+        my $str_a = substr($gene_a, $cur_pos, $rand_div);
+        my $str_b = substr($gene_b, $cur_pos, $rand_div);
+        $gene_result .= rand(100)<50 ? $str_a : $str_b;
+        $cur_pos += $rand_div;
+    }
+
+    return $gene_result;
+}
+
+sub count_acgt {
+    my ($start, $num, $genome) = @_;
+    my $want = substr($genome, $start, $num);
+    my $a_count = $want =~ tr/A//;
+    my $c_count = $want =~ tr/C//;
+    my $g_count = $want =~ tr/G//;
+    my $t_count = $want =~ tr/T//;
+    return ($a_count, $c_count, $g_count, $t_count);
+}
+
+sub creature_symbols {
+    my ($ac, $cc, $gc, $tc) = count_acgt(60,20,shift);
+    return ($SYMBOLS[$ac], $SYMBOLS[$cc], $SYMBOLS[$gc], $SYMBOLS[$tc]);
+}
+
+sub creature_color {
+    my ($ac, $cc, $gc, $tc) = count_acgt(20,20,shift);
+    $ac %= 5;
+    $cc %= 5;
+    $gc %= 5;
+    return "rgb$ac$cc$gc";
+}
+sub creature_bgcolor {
+    my ($ac, $cc, $gc, $tc) = count_acgt(0,20,shift);
+    $ac %= 5;
+    $cc %= 5;
+    $gc %= 5;
+    return "on_rgb$ac$cc$gc";
+}
+
+sub pic_creature {
+    my ($A, $C, $G, $T) = count_acgt(40,20,$_[0]);
+    my $color = creature_color($_[0]);
+    my $bgcolor = creature_bgcolor($_[0]);
+    my @symbol_creature = creature_symbols($_[0]);
+    my $creature;
+    for my $y (0 .. $dim_y) {
+        for my $x (0 .. $dim_x) {
+            if ($x == $A or $y == $C) {
+                $creature .= colored("$symbol_creature[0]", "$color $bgcolor");
+            }
+            elsif ($x == $G or $y == $T) {
+                $creature .= colored("$symbol_creature[1]", "$color $bgcolor");
+            }
+            elsif ($y == $G or $x == $T) {
+                $creature .= colored("$symbol_creature[2]", "$color $bgcolor");
+            }
+            elsif ($y == $A or $x == $C) {
+                $creature .= colored("$symbol_creature[3]", "$color $bgcolor");
+            }
+            else {
+                $creature .= " ";
+            }
+        }
+        $creature .= "\n";
+    }
+    return $creature;
+}
+        print "\n";
+sub draw_pictures {
+    my @pictures;
+    for (1 .. @C) {
+        push @pictures, pic_creature($C[$_-1]);
+    }
+    my $num_lines = int((scalar @C * $dim_x)/$MAX_X);
+    my $max_per_line = int($MAX_X/$dim_x);
+    my $n = 0; # picture ctr
+    my $i = 0;  # lines total ( ex 1 )
+    my $j = 0;  # 
+    my $m = 0;
+    while ($i <= $num_lines) {
+        $m = 0;
+        while ($m < $dim_y) {
+            my $line = "";
+            $j = 0;
+            while ($j < $max_per_line) {
+                if ($pictures[$j]) {
+                    $line .= (split /\n/, $pictures[$j])[$m] . "   ";
+                }
+                $j++;
+            }
+            print $line, "\n";
+            $m++;
+        }
+        splice @pictures, 0, $max_per_line;
+        my $num = $dim_x - 2;
+        printf("[ %-${num}s]   ", $_) for ( $n .. ($n+$max_per_line)-1);
+        print "\n\n";
+        $n += $max_per_line;
+        $i++;
+    }
+}
+
+sub show {
+    my $c_idx = shift;
+    if (@C and $C[$c_idx]) {
+        print $C[$c_idx];
+        printf("\n[   %-12s   ][   %-12s   ][   %-12s   ][   %-12s   ][   %-12s   ]\n\n", "Fertility", "Color", "Form", "Symbols", "Junk DNA :P");
+    }
+    print "press any key to continue ...\n";
+    my $in = <STDIN>;
+}
+
+
+sub help {
+    my $usage = qq/
+
+gensim works pretty simple and C-like. Although written in Perl.
+
+    spawn(N) 
+
+            spawns N new creatures where N can be a number 
+            between 1 and .. hmmm ... how big is your screen?
+
+    show(INDEX)
+
+            shows genetics of creature on position INDEX
+
+    recombinate(INDEX,INDEX)
+
+            recombinates the 2 creatures given and spawns a newborn
+            at the end with highest index number.
+
+    delete(INDEX)
+
+            deletes creature at position INDEX, the creatures after INDEX
+            will get an index number - 1 and move to the left.
+
+    help
+    
+            this.
+    
+    quit
+    
+            ...
+/;
+    print $usage;
+    print "\n\npress any key to continue...\n";
+    my $in = <STDIN>;
+}
+        
+
+sub del_creature {
+    my $idx = shift;
+    my @new_C;
+    for (0 .. (scalar @C)-1) {
+        push @new_C, $C[$_] if $_ != $idx;
+    }
+    @C = @new_C;
+}
+
+
+sub evaluate_cmd {
+    my $cmd = shift;
+    if ($cmd =~ m/spawn\((\d+)\)/) {
+        spawn($1);
+    }
+    elsif ($cmd =~ m/show\((\d+)\)/) {
+        show($1);
+    }
+    elsif ($cmd =~ m/delete\((\d+)\)/) {
+        del_creature($1);
+    }
+    elsif ($cmd =~ m/clear/) {
+        @C = ();
+    }
+    elsif ($cmd =~ m/recombinate\((\d+), *(\d+)\)/) {
+        push @C, recombinate($C[$1], $C[$2]);
+    }
+    elsif ($cmd =~ m/help/) {
+        help();
+    }
+    elsif ($cmd =~ m/quit/) {
+        exit();
+    }
+    else {
+        print colored("command not recognized!\n", 'black on_red');
+        sleep(1);
+    }
+}
+# Term::ReadLine has a ugly underlined prompt, deactivate it
+$cli->ornaments(0);
+
+# main loop, as simple as it gets
+while(1) {
+    if (@C) {
+        system("clear");
+        draw_pictures();
+        my $in = $cli->readline(" > ");
+        evaluate_cmd($in);
+    }
+    else {
+        system("clear");
+        print "Welcome to gensim! Type help for a list of commands\n";
+        my $in = $cli->readline(" > ");
+        evaluate_cmd($in);
+    }
+    
+}
