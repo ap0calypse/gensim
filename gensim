@@ -44,9 +44,9 @@ my ($A_sym, $C_sym, $G_sym, $T_sym);
 my $MAX_X = 100;
 my $MAX_Y = 35;
 
-# size of the creature pictures (10 x 10 recommended for beauty) 
-my $dim_x = 10;
-my $dim_y = 10;
+# size of the creature pictures (9 x 9 recommended for beauty) 
+my $dim_x = 9;
+my $dim_y = 9;
 
 # list for all creatures we create
 my @C;
