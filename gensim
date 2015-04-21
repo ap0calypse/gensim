@@ -182,7 +182,7 @@ sub show {
     my $c_idx = shift;
     if (@C and $C[$c_idx]) {
         print $C[$c_idx];
-        printf("\n[   %-12s   ][   %-12s   ][   %-12s   ][   %-12s   ][   %-12s   ]\n\n", "Fertility", "Color", "Form", "Symbols", "Junk DNA :P");
+        printf("\n[   %-12s   ][   %-12s   ][   %-12s   ][   %-12s   ][   %-12s   ]\n\n", "Background", "Color", "Form", "Symbols", "Junk DNA :P");
     }
     print "press any key to continue ...\n";
     my $in = <STDIN>;
