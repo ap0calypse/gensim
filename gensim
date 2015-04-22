@@ -41,8 +41,8 @@ my @SYMBOLS = (".", ",", ":", ";", "'", "~", "?", "§", "-", "_", "*", "+", "^")
 my ($A_sym, $C_sym, $G_sym, $T_sym);
 
 # max x y values for drawing pics
-my $MAX_X = 100;
-my $MAX_Y = 35;
+my $MAX_X = 80;
+my $MAX_Y = 25;
 
 # size of the creature pictures (9 x 9 recommended for beauty) 
 my $dim_x = 9;
@@ -52,7 +52,7 @@ my $dim_y = 9;
 my @C;
 
 # our 'command line' :P
-my $cli = Term::ReadLine->new;
+my $cli = Term::ReadLine->new();
 
 sub spawn {
     my $amount = shift || 1;
