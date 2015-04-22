@@ -41,12 +41,12 @@ my @SYMBOLS = (".", ",", ":", ";", "'", "~", "?", "§", "-", "_", "*", "+", "^")
 my ($A_sym, $C_sym, $G_sym, $T_sym);
 
 # max x y values for drawing pics
-my $MAX_X = 80;
+my $MAX_X = 50;
 my $MAX_Y = 25;
 
 # size of the creature pictures (9 x 9 recommended for beauty) 
-my $dim_x = 9;
-my $dim_y = 9;
+my $dim_x = 7;
+my $dim_y = 7;
 
 # list for all creatures we create
 my @C;
@@ -188,6 +188,26 @@ sub show {
     my $in = <STDIN>;
 }
 
+sub diff {
+    my ($index_a, $index_b) = @_;
+    my @g_a = split //, $C[$index_a];
+    my @g_b = split //, $C[$index_b];
+    my @diffpos;
+    for (0 .. (scalar @g_a) - 1) {
+        unless ($g_a[$_] eq $g_b[$_]) {
+            push @diffpos, $_;
+        }
+    }
+    print $C[$index_a], " = [$index_a]\n";
+    print $C[$index_b], " = [$index_b]\n";
+    my $pos_str = " " x 100;
+    for (@diffpos) {
+        substr($pos_str, $_, 1) = "^";
+    }
+    print $pos_str, "\n";
+    print "press any key to continue ...\n";
+    my $in = <STDIN>;
+}
 
 sub help {
     my $usage = qq/
@@ -207,6 +227,10 @@ gensim works pretty simple and C-like. Although written in Perl.
 
             recombinates the 2 creatures given and spawns a newborn
             at the end with highest index number.
+
+    diff(INDEX,INDEX)
+
+            shows where the genomes of 2 creatures differ
 
     delete(INDEX)
 
@@ -254,6 +278,9 @@ sub evaluate_cmd {
     elsif ($cmd =~ m/recombinate\((\d+), *(\d+)\)/) {
         push @C, recombinate($C[$1], $C[$2]);
     }
+    elsif ($cmd =~ m/diff\((\d+), *(\d+)\)/) {
+        diff($1, $2);
+    }
     elsif ($cmd =~ m/help/) {
         help();
     }
@@ -282,5 +309,4 @@ while(1) {
         my $in = $cli->readline(" > ");
         evaluate_cmd($in);
     }
-    
 }
