@@ -34,12 +34,6 @@ use Term::ReadLine;
 # Adding up the genome pool would be fun too. Who knows? The creatures could have names based
 # on their genes! Why not?!
 
-
-# our genetic alphabet, very simplified
-my @ALPHABET = qw(A C G T);
-my @SYMBOLS = (".", ",", ":", ";", "'", "~", "?", "§", "-", "_", "*", "+", "^");
-my ($A_sym, $C_sym, $G_sym, $T_sym);
-
 # max x y values for drawing pics
 my $MAX_X = 50;
 my $MAX_Y = 25;
@@ -47,6 +41,29 @@ my $MAX_Y = 25;
 # size of the creature pictures (9 x 9 recommended for beauty) 
 my $dim_x = 7;
 my $dim_y = 7;
+
+my $config_file = "./gensim.conf";
+open my $FD, "< $config_file" or die "$!";
+while(my $line = <$FD>) {
+    next if $line =~ m/^#.*$/;
+    if ($line =~ m/PICTURE_SIZE='(\d+)'/) {
+        $dim_x = $1;
+        $dim_y = $1;
+    }
+    if ($line =~ m/MAX_X='(\d+)'/) {
+        $MAX_X = $1;
+    }
+    if ($line =~ m/MAX_Y='(\d+)'/) {
+        $MAX_Y = $1;
+    }
+}
+close $FD;
+
+# our genetic alphabet, very simplified
+my @ALPHABET = qw(A C G T);
+my @SYMBOLS = (".", ",", ":", ";", "'", "~", "?", "§", "-", "_", "*", "+", "^");
+my ($A_sym, $C_sym, $G_sym, $T_sym);
+
 
 # list for all creatures we create
 my @C;
@@ -184,29 +201,31 @@ sub show {
         print $C[$c_idx];
         printf("\n[   %-12s   ][   %-12s   ][   %-12s   ][   %-12s   ][   %-12s   ]\n\n", "Background", "Color", "Form", "Symbols", "Junk DNA :P");
     }
-    print "press any key to continue ...\n";
+    print "press ENTER to continue ...\n";
     my $in = <STDIN>;
 }
 
 sub diff {
     my ($index_a, $index_b) = @_;
-    my @g_a = split //, $C[$index_a];
-    my @g_b = split //, $C[$index_b];
-    my @diffpos;
-    for (0 .. (scalar @g_a) - 1) {
-        unless ($g_a[$_] eq $g_b[$_]) {
-            push @diffpos, $_;
+    if ($C[$index_a] && $C[$index_b]) {
+        my @g_a = split //, $C[$index_a];
+        my @g_b = split //, $C[$index_b];
+        my @diffpos;
+        for (0 .. (scalar @g_a) - 1) {
+            unless ($g_a[$_] eq $g_b[$_]) {
+                push @diffpos, $_;
+            }
         }
+        print $C[$index_a], " = [$index_a]\n";
+        print $C[$index_b], " = [$index_b]\n";
+        my $pos_str = " " x 100;
+        for (@diffpos) {
+            substr($pos_str, $_, 1) = "^";
+        }
+        print $pos_str, "\n";
+        print "press ENTER to continue ...\n";
+        my $in = <STDIN>;
     }
-    print $C[$index_a], " = [$index_a]\n";
-    print $C[$index_b], " = [$index_b]\n";
-    my $pos_str = " " x 100;
-    for (@diffpos) {
-        substr($pos_str, $_, 1) = "^";
-    }
-    print $pos_str, "\n";
-    print "press any key to continue ...\n";
-    my $in = <STDIN>;
 }
 
 sub help {
@@ -214,39 +233,35 @@ sub help {
 
 gensim works pretty simple and C-like. Although written in Perl.
 
-    spawn(N) 
-
+    spawn(N)
             spawns N new creatures where N can be a number 
             between 1 and .. hmmm ... how big is your screen?
 
     show(INDEX)
-
             shows genetics of creature on position INDEX
 
     recombinate(INDEX,INDEX)
-
             recombinates the 2 creatures given and spawns a newborn
             at the end with highest index number.
 
     diff(INDEX,INDEX)
-
             shows where the genomes of 2 creatures differ
 
-    delete(INDEX)
+    mutate(INDEX)
+            randomly mutates the genome of creature on position INDEX
 
+    delete(INDEX)
             deletes creature at position INDEX, the creatures after INDEX
             will get an index number - 1 and move to the left.
 
     help
-    
             this.
     
     quit
-    
             ...
 /;
     print $usage;
-    print "\n\npress any key to continue...\n";
+    print "\n\npress ENTER to continue...\n";
     my $in = <STDIN>;
 }
         
@@ -260,6 +275,22 @@ sub del_creature {
     @C = @new_C;
 }
 
+sub mutate {
+    my $idx = shift;
+    my @a_genome = split //, $C[$idx];
+    my @new_genome;
+    for (@a_genome) {
+        if (rand(100) < 10) {
+            push @new_genome, $ALPHABET[rand @ALPHABET];
+        }
+        else {
+            push @new_genome, $_;
+        }
+    }
+    my $new_genome_str = join "", @new_genome;
+    $C[$idx] = $new_genome_str;
+}
+
 
 sub evaluate_cmd {
     my $cmd = shift;
@@ -268,6 +299,9 @@ sub evaluate_cmd {
     }
     elsif ($cmd =~ m/show\((\d+)\)/) {
         show($1);
+    }
+    elsif ($cmd =~ m/mutate\((\d+)\)/) {
+        mutate($1);
     }
     elsif ($cmd =~ m/delete\((\d+)\)/) {
         del_creature($1);
