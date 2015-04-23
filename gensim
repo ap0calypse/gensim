@@ -159,7 +159,7 @@ sub pic_creature {
     }
     return $creature;
 }
-        print "\n";
+
 sub draw_pictures {
     my @pictures;
     for (1 .. @C) {
