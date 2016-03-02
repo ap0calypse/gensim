@@ -68,7 +68,7 @@ my ($A_sym, $C_sym, $G_sym, $T_sym);
 my @C;
 
 # our 'command line' :P
-my $cli = Term::ReadLine->new();
+my $cli = Term::ReadLine->new('gensim');
 
 sub spawn {
     my $amount = shift || 1;
