@@ -22,7 +22,7 @@ use Term::ReadLine;
 # One could argue that random mutations happen in nature, but because this simulator
 # is random anyway, why get another level of enthropy in it ;) ?
 #
-# Color is calcucalted like this: A is for R part, C is for G part, G is for B part.
+# Color is calculated like this: A is for R part, C is for G part, G is for B part.
 # Since the color section is 20 characters long, it could happen that we count over 5. (example: 6 A's)
 # in this case, we take the modulo % 5. A gene sequence of 5 A's, 7 C's, 10 G's and 3 T's
 # would give you 0203 or rgb020. The T's are ignored in our RGB reality.
